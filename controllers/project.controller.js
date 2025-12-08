@@ -1,4 +1,5 @@
 import Project from "../models/project.model.js";
+import ProjectCostReport from "../models/projectCostReport.model.js"
 import { v4 as uuidv4 } from "uuid";
 import dotenv from "dotenv";
 dotenv.config();
@@ -34,6 +35,13 @@ export const deleteProject = async (req, res) => {
   await Project.findByIdAndDelete(req.params.id);
   res.json({ message: "Project deleted" });
 };
+
+// GET /api/projects/:projectId/report
+export const getProjectReport = async (req, res) => {
+  const report = await ProjectCostReport.findOne({ ProjectId: req.params.projectId });
+  res.json(report);
+};
+
 
 // Generate view-only link
 export const generateViewLink = async (req, res) => {

@@ -6,6 +6,7 @@ import {
   deleteProject,
   createProject,
   generateViewLink,
+  getProjectReport,
   viewByToken,
 } from "../controllers/project.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
@@ -15,6 +16,7 @@ const router = express.Router();
 
 router.get("/", authMiddleware, adminOnly, getAllProjects);
 router.get("/:id", authMiddleware, adminOnly, getProject);
+router.get("/:projectId/report", authMiddleware, adminOnly, getProjectReport)
 router.post("/", authMiddleware, adminOnly, createProject);
 router.put("/:id", authMiddleware, adminOnly, updateProject);
 router.delete("/:id", authMiddleware, adminOnly, deleteProject);
