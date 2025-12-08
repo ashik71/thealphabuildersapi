@@ -6,8 +6,7 @@ import authRoutes from "./routes/auth.routes.js";
 import projectRoutes from "./routes/project.routes.js";
 import costCategoryRoutes from "./routes/costCategory.routes.js";
 import expenseRoutes from "./routes/expense.routes.js";
-import bcrypt from "bcryptjs";
-import User from "./models/user.model.js";
+import shareholderRoutes from "./routes/shareholder.routes.js";
 
 dotenv.config();
 const app = express();
@@ -18,7 +17,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/cost-categories", costCategoryRoutes);
 app.use("/api/expenses", expenseRoutes);
-// app.use("/api/shareholders", shareholderRoutes);
+app.use("/api/shareholders", shareholderRoutes);
 // app.use("/api/payments", paymentRoutes);
 
 
