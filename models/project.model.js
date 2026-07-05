@@ -13,7 +13,16 @@ const ProjectSchema = new mongoose.Schema(
     type: String,
     enum: ['planned', 'in-progress', 'completed', 'on-hold'],
     default: 'planned'
-  }
+  },
+    viewTokens: {
+      type: [
+        {
+          token: { type: String, required: true },
+          expiresAt: { type: Date, required: true },
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );

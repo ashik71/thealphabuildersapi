@@ -3,8 +3,14 @@ import dotenv from "dotenv";
 import CostCategory from "../models/costCategory.model.js";
 dotenv.config();
 
+// ✅ Get all CostCategories
+export const getAllCostCategories = async (req, res) => {
+  const categories = await CostCategory.find();
+  res.json(categories);
+};
+
 // ✅ Get single CostCategory
-export const getCostByProjectId = async (req, res) => {
+export const getCostCategoryById = async (req, res) => {
   const cost = await CostCategory.findById(req.params.id);
   if (!cost) return res.status(404).json({ message: "Not found" });
   res.json(cost);
