@@ -3,11 +3,12 @@ import dotenv from "dotenv";
 import Payment from "../models/payment.model.js";
 dotenv.config();
 
-// ✅ Get single Payment
-export const getPaymentByProjectId = async (req, res) => {
-  const cost = await Payment.findById(req.params.id);
-  if (!cost) return res.status(404).json({ message: "Not found" });
-  res.json(cost);
+// ✅ Get all Payments for a project
+export const getPaymentsByProjectId = async (req, res) => {
+  const payments = await Payment.find({
+    ProjectId: req.params.projectId,
+  }).populate("ShareholderId");
+  res.json(payments);
 };
 
 export const createPayment = async (req, res) => {

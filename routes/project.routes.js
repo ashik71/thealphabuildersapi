@@ -7,18 +7,22 @@ import {
   createProject,
   generateViewLink,
   getProjectReport,
+  getProjectFunding,
   viewByToken,
 } from "../controllers/project.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 import { adminOnly } from "../middleware/role.middleware.js";
+import { validateBody } from "../middleware/validate.middleware.js";
+import { projectSchema } from "../validation/schemas.js";
 
 const router = express.Router();
 
 router.get("/", authMiddleware, adminOnly, getAllProjects);
 router.get("/:id", authMiddleware, adminOnly, getProject);
 router.get("/:projectId/report", authMiddleware, adminOnly, getProjectReport)
-router.post("/", authMiddleware, adminOnly, createProject);
-router.put("/:id", authMiddleware, adminOnly, updateProject);
+router.get("/:projectId/funding", authMiddleware, adminOnly, getProjectFunding)
+router.post("/", authMiddleware, adminOnly, validateBody(projectSchema), createProject);
+router.put("/:id", authMiddleware, adminOnly, validateBody(projectSchema.partial()), updateProject);
 router.delete("/:id", authMiddleware, adminOnly, deleteProject);
 router.post("/:id/view-link", authMiddleware, adminOnly, generateViewLink);
 

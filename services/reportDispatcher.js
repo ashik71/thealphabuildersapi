@@ -1,6 +1,6 @@
 // services/reportDispatcher.js
 import ProjectCostReport from "../models/projectCostReport.model.js";
-import Category from "../models/costCategory.model.js";
+import CostCategory from "../models/costCategory.model.js";
 import Project from "../models/project.model.js";
 
 export async function dispatchProjectCostReportUpdate(payload) {
@@ -51,8 +51,8 @@ export async function dispatchProjectCostReportUpdate(payload) {
 // --- Core update logic ---
 async function updateReportTotals(projectId, categoryId, subcategoryId, amountDiff) {
   const project = await Project.findById(projectId);
-  const category = await Category.findById(categoryId);
-  const subcategory = subcategoryId ? await Category.findById(subcategoryId) : null;
+  const category = await CostCategory.findById(categoryId);
+  const subcategory = subcategoryId ? await CostCategory.findById(subcategoryId) : null;
 
   if (!project || !category) {
     console.warn("Missing project or category. Skipping update.");
@@ -76,17 +76,17 @@ async function updateReportTotals(projectId, categoryId, subcategoryId, amountDi
 
   const breakdown = report.Breakdown;
 
-  const index = breakdown.findIndex((item)=>{
-    return item.CategoryId.equals(categoryId) &&
-    item.SubcategoryId.equals(subcategoryId);
+  const index = breakdown.findIndex((item) => {
+    const sameCategory = item.CategoryId.equals(categoryId);
+    const sameSubcategory = item.SubcategoryId
+      ? item.SubcategoryId.equals(subcategoryId)
+      : !subcategoryId;
+    return sameCategory && sameSubcategory;
   })
-
-console.log("amountDiff", amountDiff);
 
   if (index >= 0) {
     breakdown[index].ActualCost = Math.max(0, breakdown[index].ActualCost + amountDiff);
   } else {
-    console.log("new breakdown")
     breakdown.push({
       CategoryId: categoryId,
       CategoryName: category.Name || "Unknown",

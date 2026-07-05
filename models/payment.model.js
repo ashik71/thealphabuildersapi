@@ -15,7 +15,7 @@ const PaymentSchema = new mongoose.Schema(
     CostCategoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "CostCategory",
-      required: true,
+      default: null,
     },
     AmountPaid: { type: Number, required: true },
     Date: { type: Date, default: Date.now },

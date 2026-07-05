@@ -7,6 +7,8 @@ import projectRoutes from "./routes/project.routes.js";
 import costCategoryRoutes from "./routes/costCategory.routes.js";
 import expenseRoutes from "./routes/expense.routes.js";
 import shareholderRoutes from "./routes/shareholder.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
+import shareholderCommitmentRoutes from "./routes/shareholderCommitment.routes.js";
 
 dotenv.config();
 const app = express();
@@ -18,7 +20,8 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/cost-categories", costCategoryRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/shareholders", shareholderRoutes);
-// app.use("/api/payments", paymentRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/commitments", shareholderCommitmentRoutes);
 
 
 mongoose

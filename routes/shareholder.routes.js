@@ -8,12 +8,14 @@ import {
 
 import { authMiddleware } from "../middleware/auth.middleware.js";
 import { adminOnly } from "../middleware/role.middleware.js";
+import { validateBody } from "../middleware/validate.middleware.js";
+import { shareholderSchema } from "../validation/schemas.js";
 
 const router = express.Router();
 
 router.get("/", authMiddleware, adminOnly, getShareholders);
-router.post("/", authMiddleware, adminOnly, createShareholder);
-router.put("/:id", authMiddleware, adminOnly, updateShareholder);
+router.post("/", authMiddleware, adminOnly, validateBody(shareholderSchema), createShareholder);
+router.put("/:id", authMiddleware, adminOnly, validateBody(shareholderSchema.partial()), updateShareholder);
 router.delete("/:id", authMiddleware, adminOnly, deleteShareholder);
 
 export default router;

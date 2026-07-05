@@ -4,7 +4,7 @@ const BreakdownSchema = new mongoose.Schema(
   {
     CategoryId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
+      ref: "CostCategory",
       required: true,
     },
     CategoryName: {
@@ -13,7 +13,7 @@ const BreakdownSchema = new mongoose.Schema(
     },
     SubcategoryId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
+      ref: "CostCategory",
     },
     SubcategoryName: {
       type: String,

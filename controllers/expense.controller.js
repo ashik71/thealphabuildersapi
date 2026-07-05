@@ -69,12 +69,11 @@ export const updateExpense = async (req, res) => {
 
 // ✅ Delete Expense
 export const deleteExpense = async (req, res) => {
-  await Expense.findByIdAndDelete(req.params.id);
+  const expense = await Expense.findByIdAndDelete(req.params.id);
+  if (!expense) return res.status(404).json({ message: "Expense not found" });
+
   dispatchProjectCostReportUpdate({
-    projectId: expense.ProjectId,
-    categoryId: expense.CostCategoryId,
-    subcategoryId: expense.SubCategoryId,
-    amount: expense.amount,
+    expense,
     action: "delete",
   });
   res.json({ message: "Expense deleted" });

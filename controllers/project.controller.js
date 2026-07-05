@@ -1,5 +1,7 @@
 import Project from "../models/project.model.js";
 import ProjectCostReport from "../models/projectCostReport.model.js"
+import ShareholderCommitment from "../models/shareholderCommitment.model.js";
+import Payment from "../models/payment.model.js";
 import { v4 as uuidv4 } from "uuid";
 import dotenv from "dotenv";
 dotenv.config();
@@ -42,6 +44,62 @@ export const getProjectReport = async (req, res) => {
   res.json(report);
 };
 
+
+// GET /api/projects/:projectId/funding
+// Per-shareholder committed vs paid vs remaining, plus project totals
+export const getProjectFunding = async (req, res) => {
+  const { projectId } = req.params;
+
+  const [commitments, payments] = await Promise.all([
+    ShareholderCommitment.find({ ProjectId: projectId }).populate(
+      "ShareholderId"
+    ),
+    Payment.find({ ProjectId: projectId }),
+  ]);
+
+  const paidByShareholder = {};
+  for (const payment of payments) {
+    const key = payment.ShareholderId.toString();
+    paidByShareholder[key] = (paidByShareholder[key] || 0) + payment.AmountPaid;
+  }
+
+  const shareholders = commitments.map((commitment) => {
+    const shareholderId = commitment.ShareholderId._id.toString();
+    const paid = paidByShareholder[shareholderId] || 0;
+    const committed = commitment.CommittedAmount;
+    delete paidByShareholder[shareholderId];
+    return {
+      ShareholderId: shareholderId,
+      ShareholderName: commitment.ShareholderId.Name,
+      Committed: committed,
+      Paid: paid,
+      Remaining: committed - paid,
+    };
+  });
+
+  // Shareholders who paid without a recorded commitment still show up (Committed = 0)
+  for (const [shareholderId, paid] of Object.entries(paidByShareholder)) {
+    shareholders.push({
+      ShareholderId: shareholderId,
+      ShareholderName: null,
+      Committed: 0,
+      Paid: paid,
+      Remaining: -paid,
+    });
+  }
+
+  const totals = shareholders.reduce(
+    (acc, s) => {
+      acc.Committed += s.Committed;
+      acc.Paid += s.Paid;
+      acc.Remaining += s.Remaining;
+      return acc;
+    },
+    { Committed: 0, Paid: 0, Remaining: 0 }
+  );
+
+  res.json({ ProjectId: projectId, Shareholders: shareholders, Totals: totals });
+};
 
 // Generate view-only link
 export const generateViewLink = async (req, res) => {
