@@ -23,7 +23,7 @@ const router = express.Router();
 router.get("/", authMiddleware, adminOnly, getAllCostCategories);
 router.get("/:id", authMiddleware, adminOnly, getCostCategoryById);
 router.post("/", authMiddleware, adminOnly, validateBody(costCategorySchema), createCostCategory);
-router.put("/:id", authMiddleware, adminOnly, updateCostCategory);
+router.put("/:id", authMiddleware, adminOnly, validateBody(costCategorySchema.partial()), updateCostCategory);
 router.delete("/:id", authMiddleware, adminOnly, deleteCostCategory);
 
 export default router;

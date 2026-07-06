@@ -38,7 +38,7 @@ export const shareholderCommitmentSchema = z.object({
 export const expenseSchema = z.object({
   ProjectId: objectId,
   CostCategoryId: objectId,
-  SubCategoryId: objectId.optional(),
+  SubCategoryId: objectId.optional().nullable(),
   Description: z.string().optional(),
   Amount: z.number().positive(),
   Date: z.coerce.date().optional(),

@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getCostByCategoryId,
+  getExpenses,
   createExpense,
   updateExpense,
   deleteExpense
@@ -13,6 +14,7 @@ import { expenseSchema } from "../validation/schemas.js";
 
 const router = express.Router();
 
+router.get("/", authMiddleware, adminOnly, getExpenses);
 router.get("/:costCategoryId", authMiddleware, adminOnly, getCostByCategoryId);
 router.post("/", authMiddleware, adminOnly, validateBody(expenseSchema), createExpense);
 router.put("/:id", authMiddleware, adminOnly, validateBody(expenseSchema.partial()), updateExpense);

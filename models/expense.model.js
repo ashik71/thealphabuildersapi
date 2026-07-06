@@ -23,6 +23,8 @@ const ExpenseSchema = new mongoose.Schema(
     Date: { type: Date, default: Date.now },
     PaidTo: String,
     Notes: String,
+    IsDeleted: { type: Boolean, default: false },
+    DeletedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

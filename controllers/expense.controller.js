@@ -10,12 +10,23 @@ export const getCostByCategoryId = async (req, res) => {
   res.json(cost);
 };
 
+// ✅ List Expenses (optionally filtered by project)
+export const getExpenses = async (req, res) => {
+  const filter = { IsDeleted: { $ne: true } };
+  if (req.query.projectId) filter.ProjectId = req.query.projectId;
+  const expenses = await Expense.find(filter)
+    .populate("CostCategoryId")
+    .populate("SubCategoryId")
+    .sort({ Date: -1 });
+  res.json(expenses);
+};
+
 export const createExpense = async (req, res) => {
   try {
     const expense = await Expense.create(req.body);
 
-    // ✅ Fire & forget (don’t wait)
-    dispatchProjectCostReportUpdate({
+    // Await so the response only returns once the report reflects this expense
+    await dispatchProjectCostReportUpdate({
       projectId: expense.ProjectId,
       categoryId: expense.CostCategoryId,
       subcategoryId: expense.SubCategoryId,
@@ -44,13 +55,18 @@ export const updateExpense = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Expense not found" });
 
+    if (oldExpense.IsDeleted)
+      return res
+        .status(400)
+        .json({ success: false, message: "Cannot edit a deleted expense" });
+
     // Update expense fields
     const updatedExpense = await Expense.findByIdAndUpdate(id, req.body, {
       new: true,
     });
 
-    // ✅ Fire & forget command
-    dispatchProjectCostReportUpdate({
+    // Await so the response only returns once the report reflects this update
+    await dispatchProjectCostReportUpdate({
       oldExpense,
       newExpense: updatedExpense,
       action: "update",
@@ -67,12 +83,18 @@ export const updateExpense = async (req, res) => {
   }
 };
 
-// ✅ Delete Expense
+// ✅ Delete Expense (soft delete — preserves history for cost report reconciliation)
 export const deleteExpense = async (req, res) => {
-  const expense = await Expense.findByIdAndDelete(req.params.id);
+  const expense = await Expense.findById(req.params.id);
   if (!expense) return res.status(404).json({ message: "Expense not found" });
+  if (expense.IsDeleted)
+    return res.status(400).json({ message: "Expense already deleted" });
 
-  dispatchProjectCostReportUpdate({
+  expense.IsDeleted = true;
+  expense.DeletedAt = new Date();
+  await expense.save();
+
+  await dispatchProjectCostReportUpdate({
     expense,
     action: "delete",
   });

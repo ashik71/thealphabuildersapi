@@ -85,7 +85,14 @@ async function updateReportTotals(projectId, categoryId, subcategoryId, amountDi
   })
 
   if (index >= 0) {
-    breakdown[index].ActualCost = Math.max(0, breakdown[index].ActualCost + amountDiff);
+    const updatedActual = Math.max(0, breakdown[index].ActualCost + amountDiff);
+    // Drop the row once it has neither actual spend nor an estimated budget —
+    // otherwise deleted expenses leave a permanent zeroed line in the report.
+    if (updatedActual === 0 && (breakdown[index].EstimatedCost || 0) === 0) {
+      breakdown.splice(index, 1);
+    } else {
+      breakdown[index].ActualCost = updatedActual;
+    }
   } else {
     breakdown.push({
       CategoryId: categoryId,
