@@ -22,7 +22,8 @@ export const shareholderSchema = z.object({
 export const paymentSchema = z.object({
   ProjectId: objectId,
   ShareholderId: objectId,
-  CostCategoryId: objectId.optional(),
+  CostCategoryId: objectId.optional().nullable(),
+  SubCategoryId: objectId.optional().nullable(),
   AmountPaid: z.number().positive(),
   Date: z.coerce.date().optional(),
   Notes: z.string().optional(),

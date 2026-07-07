@@ -7,7 +7,10 @@ dotenv.config();
 export const getPaymentsByProjectId = async (req, res) => {
   const payments = await Payment.find({
     ProjectId: req.params.projectId,
-  }).populate("ShareholderId");
+  })
+    .populate("ShareholderId")
+    .populate("CostCategoryId")
+    .populate("SubCategoryId");
   res.json(payments);
 };
 

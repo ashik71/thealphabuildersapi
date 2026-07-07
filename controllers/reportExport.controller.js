@@ -32,6 +32,19 @@ function buildShareholderSummary(commitments, payments) {
   return rows;
 }
 
+function buildShareholderCategoryBreakdown(payments) {
+  const grouped = {};
+  for (const payment of payments) {
+    const shareholderName = payment.ShareholderId?.Name || "Unknown";
+    const categoryName = payment.CostCategoryId?.Name || "Uncategorized";
+    const subCategoryName = payment.SubCategoryId?.Name || "-";
+    const key = `${shareholderName}|${categoryName}|${subCategoryName}`;
+    grouped[key] ??= { shareholder: shareholderName, category: categoryName, subcategory: subCategoryName, amount: 0 };
+    grouped[key].amount += payment.AmountPaid;
+  }
+  return Object.values(grouped);
+}
+
 function headerRow(sheet) {
   sheet.getRow(1).font = { bold: true };
 }
@@ -47,7 +60,10 @@ export const exportProjectReport = async (req, res) => {
       .populate("SubCategoryId")
       .sort({ Date: -1 }),
     ShareholderCommitment.find({ ProjectId: projectId }).populate("ShareholderId"),
-    Payment.find({ ProjectId: projectId }).populate("ShareholderId"),
+    Payment.find({ ProjectId: projectId })
+      .populate("ShareholderId")
+      .populate("CostCategoryId")
+      .populate("SubCategoryId"),
   ]);
 
   if (!project) return res.status(404).json({ message: "Project not found" });
@@ -136,6 +152,8 @@ export const exportProjectReport = async (req, res) => {
   const paymentSheet = workbook.addWorksheet("Payments");
   paymentSheet.columns = [
     { header: "Shareholder", key: "shareholder", width: 24 },
+    { header: "Category", key: "category", width: 20 },
+    { header: "Subcategory", key: "subcategory", width: 20 },
     { header: "Amount Paid", key: "amount", width: 16 },
     { header: "Date", key: "date", width: 14 },
     { header: "Notes", key: "notes", width: 30 },
@@ -143,12 +161,24 @@ export const exportProjectReport = async (req, res) => {
   payments.forEach((p) =>
     paymentSheet.addRow({
       shareholder: p.ShareholderId?.Name || "Unknown",
+      category: p.CostCategoryId?.Name || "-",
+      subcategory: p.SubCategoryId?.Name || "-",
       amount: p.AmountPaid,
       date: p.Date ? new Date(p.Date).toISOString().slice(0, 10) : "-",
       notes: p.Notes || "-",
     })
   );
   headerRow(paymentSheet);
+
+  const shCategorySheet = workbook.addWorksheet("Shareholder Category Breakdown");
+  shCategorySheet.columns = [
+    { header: "Shareholder", key: "shareholder", width: 24 },
+    { header: "Category", key: "category", width: 20 },
+    { header: "Subcategory", key: "subcategory", width: 20 },
+    { header: "Amount Paid", key: "amount", width: 16 },
+  ];
+  buildShareholderCategoryBreakdown(payments).forEach((r) => shCategorySheet.addRow(r));
+  headerRow(shCategorySheet);
 
   const shSummary = workbook.addWorksheet("Shareholder Summary");
   shSummary.columns = [

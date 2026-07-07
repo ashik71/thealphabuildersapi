@@ -54,14 +54,37 @@ export const getProjectFunding = async (req, res) => {
     ShareholderCommitment.find({ ProjectId: projectId }).populate(
       "ShareholderId"
     ),
-    Payment.find({ ProjectId: projectId }),
+    Payment.find({ ProjectId: projectId })
+      .populate("CostCategoryId")
+      .populate("SubCategoryId"),
   ]);
 
   const paidByShareholder = {};
+  const categoriesByShareholder = {};
   for (const payment of payments) {
     const key = payment.ShareholderId.toString();
     paidByShareholder[key] = (paidByShareholder[key] || 0) + payment.AmountPaid;
+
+    const categoryId = payment.CostCategoryId?._id?.toString() || null;
+    const subCategoryId = payment.SubCategoryId?._id?.toString() || null;
+    const groupKey = `${categoryId || "none"}|${subCategoryId || "none"}`;
+
+    const categories = (categoriesByShareholder[key] ??= {});
+    categories[groupKey] ??= {
+      CategoryId: categoryId,
+      CategoryName: payment.CostCategoryId?.Name || "Uncategorized",
+      SubCategoryId: subCategoryId,
+      SubCategoryName: payment.SubCategoryId?.Name || null,
+      Amount: 0,
+    };
+    categories[groupKey].Amount += payment.AmountPaid;
   }
+
+  const takeCategoryBreakdown = (shareholderId) => {
+    const breakdown = Object.values(categoriesByShareholder[shareholderId] || {});
+    delete categoriesByShareholder[shareholderId];
+    return breakdown;
+  };
 
   const shareholders = commitments.map((commitment) => {
     const shareholderId = commitment.ShareholderId._id.toString();
@@ -74,6 +97,7 @@ export const getProjectFunding = async (req, res) => {
       Committed: committed,
       Paid: paid,
       Remaining: committed - paid,
+      Categories: takeCategoryBreakdown(shareholderId),
     };
   });
 
@@ -85,6 +109,7 @@ export const getProjectFunding = async (req, res) => {
       Committed: 0,
       Paid: paid,
       Remaining: -paid,
+      Categories: takeCategoryBreakdown(shareholderId),
     });
   }
 

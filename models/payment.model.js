@@ -17,6 +17,11 @@ const PaymentSchema = new mongoose.Schema(
       ref: "CostCategory",
       default: null,
     },
+    SubCategoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CostCategory",
+      default: null,
+    },
     AmountPaid: { type: Number, required: true },
     Date: { type: Date, default: Date.now },
     Notes: String,
