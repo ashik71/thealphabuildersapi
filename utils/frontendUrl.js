@@ -1,10 +1,8 @@
-// Resolve the base URL used to build shareable links (view-link, shareholder-view-link).
-// In production this must come from FRONTEND_URL — silently falling back to localhost
-// would hand out broken links to whoever the admin shares them with.
+// Base URL used to build shareable links (view-link, shareholder-view-link).
+// Mirrors how the frontend hardcodes apiBase in environment.prod.ts — no env
+// var to set on Render, no restart-to-pick-up-changes gotcha.
+const PRODUCTION_FRONTEND_URL = "https://thealphabuildersportal.onrender.com";
+
 export function getFrontendUrl() {
-  if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL;
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("FRONTEND_URL must be set in production");
-  }
-  return "http://localhost:4200";
+  return process.env.FRONTEND_URL || PRODUCTION_FRONTEND_URL;
 }
