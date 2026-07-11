@@ -148,7 +148,9 @@ export const generateViewLink = async (req, res) => {
   });
 };
 
-// Validate view token
+// Public: resolve a project view token. Includes cost category breakdown and
+// funding totals, but only the shareholder COUNT — never names or individual
+// commitment/payment amounts.
 export const viewByToken = async (req, res) => {
   const { token } = req.params;
   const project = await Project.findOne({ "viewTokens.token": token });
@@ -158,5 +160,34 @@ export const viewByToken = async (req, res) => {
   if (new Date() > new Date(vt.expiresAt))
     return res.status(410).json({ message: "Token expired" });
 
-  res.json(project);
+  const [report, commitments, payments] = await Promise.all([
+    ProjectCostReport.findOne({ ProjectId: project._id }),
+    ShareholderCommitment.find({ ProjectId: project._id }),
+    Payment.find({ ProjectId: project._id }),
+  ]);
+
+  const shareholderIds = new Set([
+    ...commitments.map((c) => c.ShareholderId.toString()),
+    ...payments.map((p) => p.ShareholderId.toString()),
+  ]);
+  const totalCommitted = commitments.reduce((sum, c) => sum + c.CommittedAmount, 0);
+  const totalPaid = payments.reduce((sum, p) => sum + p.AmountPaid, 0);
+
+  res.json({
+    Name: project.Name,
+    Location: project.Location,
+    Summary: project.Summary,
+    Status: project.Status,
+    EstimatedCost: project.EstimatedCost,
+    ActualCost: project.ActualCost,
+    StartDate: project.StartDate,
+    EndDate: project.EndDate,
+    CostBreakdown: report?.Breakdown || [],
+    Funding: {
+      ShareholderCount: shareholderIds.size,
+      Committed: totalCommitted,
+      Paid: totalPaid,
+      Remaining: totalCommitted - totalPaid,
+    },
+  });
 };
