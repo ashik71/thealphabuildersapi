@@ -51,13 +51,6 @@ export const generateShareholderViewLink = async (req, res) => {
   const commitment = await ShareholderCommitment.findById(req.params.id);
   if (!commitment) return res.status(404).json({ message: "Not found" });
 
-  let frontendUrl;
-  try {
-    frontendUrl = getFrontendUrl();
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
-
   const token = uuidv4();
   const expiresAt = new Date(
     Date.now() + Number(process.env.VIEW_LINK_EXPIRY_MIN) * 60 * 1000
@@ -66,7 +59,7 @@ export const generateShareholderViewLink = async (req, res) => {
   await commitment.save();
 
   res.json({
-    url: `${frontendUrl}/shareholder-view/${token}`,
+    url: `${getFrontendUrl()}/shareholder-view/${token}`,
     expiresAt,
   });
 };

@@ -135,13 +135,6 @@ export const generateViewLink = async (req, res) => {
   const project = await Project.findById(id);
   if (!project) return res.status(404).json({ message: "Not found" });
 
-  let frontendUrl;
-  try {
-    frontendUrl = getFrontendUrl();
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
-
   const token = uuidv4();
   const expiresAt = new Date(
     Date.now() + Number(process.env.VIEW_LINK_EXPIRY_MIN) * 60 * 1000
@@ -150,7 +143,7 @@ export const generateViewLink = async (req, res) => {
   await project.save();
 
   res.json({
-    url: `${frontendUrl}/view/${token}`,
+    url: `${getFrontendUrl()}/view/${token}`,
     expiresAt,
   });
 };
