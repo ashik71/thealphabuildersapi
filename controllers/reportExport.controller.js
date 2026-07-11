@@ -197,3 +197,79 @@ export const exportProjectReport = async (req, res) => {
   await workbook.xlsx.write(res);
   res.end();
 };
+
+// Public: export a single shareholder's own data for a project, resolved via their share-link token.
+// Scoped identically to viewByShareholderToken — never touches other shareholders' commitments/payments.
+export const exportShareholderReport = async (req, res) => {
+  const { token } = req.params;
+  const commitment = await ShareholderCommitment.findOne({
+    "viewTokens.token": token,
+  }).populate("ShareholderId");
+  if (!commitment) return res.status(404).json({ message: "Invalid token" });
+
+  const vt = commitment.viewTokens.find((v) => v.token === token);
+  if (new Date() > new Date(vt.expiresAt))
+    return res.status(410).json({ message: "Token expired" });
+
+  const project = await Project.findById(commitment.ProjectId);
+  if (!project) return res.status(404).json({ message: "Not found" });
+
+  const payments = await Payment.find({
+    ProjectId: commitment.ProjectId,
+    ShareholderId: commitment.ShareholderId._id,
+  })
+    .populate("CostCategoryId")
+    .populate("SubCategoryId")
+    .sort({ Date: -1 });
+
+  const paid = payments.reduce((sum, p) => sum + p.AmountPaid, 0);
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "The Alpha Builders";
+  workbook.created = new Date();
+
+  const summary = workbook.addWorksheet("Summary");
+  summary.columns = [
+    { header: "Field", key: "field", width: 30 },
+    { header: "Value", key: "value", width: 30 },
+  ];
+  summary.addRows([
+    { field: "Project Name", value: project.Name },
+    { field: "Location", value: project.Location || "-" },
+    { field: "Status", value: project.Status },
+    { field: "Shareholder", value: commitment.ShareholderId.Name },
+    { field: "Committed", value: commitment.CommittedAmount },
+    { field: "Paid", value: paid },
+    { field: "Remaining", value: commitment.CommittedAmount - paid },
+  ]);
+  headerRow(summary);
+
+  const paymentSheet = workbook.addWorksheet("Payments");
+  paymentSheet.columns = [
+    { header: "Date", key: "date", width: 14 },
+    { header: "Category", key: "category", width: 20 },
+    { header: "Subcategory", key: "subcategory", width: 20 },
+    { header: "Amount Paid", key: "amount", width: 16 },
+    { header: "Notes", key: "notes", width: 30 },
+  ];
+  payments.forEach((p) =>
+    paymentSheet.addRow({
+      date: p.Date ? new Date(p.Date).toISOString().slice(0, 10) : "-",
+      category: p.CostCategoryId?.Name || "-",
+      subcategory: p.SubCategoryId?.Name || "-",
+      amount: p.AmountPaid,
+      notes: p.Notes || "-",
+    })
+  );
+  headerRow(paymentSheet);
+
+  const safeName = `${project.Name || "project"}_${commitment.ShareholderId.Name || "shareholder"}`.replace(
+    /[^a-z0-9]+/gi,
+    "_"
+  );
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  res.setHeader("Content-Disposition", `attachment; filename="${safeName}_report.xlsx"`);
+
+  await workbook.xlsx.write(res);
+  res.end();
+};

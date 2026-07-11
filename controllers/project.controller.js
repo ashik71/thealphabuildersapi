@@ -4,6 +4,7 @@ import ShareholderCommitment from "../models/shareholderCommitment.model.js";
 import Payment from "../models/payment.model.js";
 import { v4 as uuidv4 } from "uuid";
 import dotenv from "dotenv";
+import { getFrontendUrl } from "../utils/frontendUrl.js";
 dotenv.config();
 
 export const getAllProjects = async (req, res) => {
@@ -93,6 +94,7 @@ export const getProjectFunding = async (req, res) => {
     delete paidByShareholder[shareholderId];
     return {
       ShareholderId: shareholderId,
+      CommitmentId: commitment._id.toString(),
       ShareholderName: commitment.ShareholderId.Name,
       Committed: committed,
       Paid: paid,
@@ -105,6 +107,7 @@ export const getProjectFunding = async (req, res) => {
   for (const [shareholderId, paid] of Object.entries(paidByShareholder)) {
     shareholders.push({
       ShareholderId: shareholderId,
+      CommitmentId: null,
       ShareholderName: null,
       Committed: 0,
       Paid: paid,
@@ -132,6 +135,13 @@ export const generateViewLink = async (req, res) => {
   const project = await Project.findById(id);
   if (!project) return res.status(404).json({ message: "Not found" });
 
+  let frontendUrl;
+  try {
+    frontendUrl = getFrontendUrl();
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+
   const token = uuidv4();
   const expiresAt = new Date(
     Date.now() + Number(process.env.VIEW_LINK_EXPIRY_MIN) * 60 * 1000
@@ -140,7 +150,7 @@ export const generateViewLink = async (req, res) => {
   await project.save();
 
   res.json({
-    url: `${process.env.FRONTEND_URL || "http://localhost:4200"}/view/${token}`,
+    url: `${frontendUrl}/view/${token}`,
     expiresAt,
   });
 };
