@@ -111,4 +111,8 @@ async function updateReportTotals(projectId, categoryId, subcategoryId, amountDi
   report.GeneratedAt = new Date();
 
   await report.save();
+
+  // Keep Project.ActualCost in sync — it's the field GET /api/projects (and
+  // GET /:id/view-link) expose; the report above is the detail-view source.
+  await Project.findByIdAndUpdate(projectId, { ActualCost: totalActual });
 }
