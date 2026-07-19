@@ -16,15 +16,6 @@ const ShareholderCommitmentSchema = new mongoose.Schema(
     },
     CommittedAmount: { type: Number, required: true },
     Notes: String,
-    viewTokens: {
-      type: [
-        {
-          token: { type: String, required: true },
-          expiresAt: { type: Date, required: true },
-        },
-      ],
-      default: [],
-    },
   },
   { timestamps: true }
 );

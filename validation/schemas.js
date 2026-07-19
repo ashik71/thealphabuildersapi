@@ -2,6 +2,42 @@ import { z } from "zod";
 
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid id");
 
+const password = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(128);
+
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const createUserSchema = z
+  .object({
+    name: z.string().min(1),
+    email: z.string().email(),
+    password,
+    role: z.enum(["admin", "shareholder"]),
+    shareholderId: objectId.optional().nullable(),
+  })
+  .refine((v) => v.role !== "shareholder" || !!v.shareholderId, {
+    message: "A shareholder account must be linked to a shareholder",
+    path: ["shareholderId"],
+  });
+
+export const createInvitationSchema = z.object({
+  shareholderId: objectId,
+  expiryHours: z.union([z.literal(24), z.literal(48), z.literal(72)]),
+});
+
+// The invitation itself carries the email and shareholder link — accepting one
+// only ever sets a name and password, so nobody can bind their account to a
+// shareholder of their choosing.
+export const acceptInvitationSchema = z.object({
+  name: z.string().min(1),
+  password,
+});
+
 export const projectSchema = z.object({
   Name: z.string().min(1),
   Location: z.string().optional(),
