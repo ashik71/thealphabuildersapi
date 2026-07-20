@@ -8,6 +8,7 @@
  */
 import dotenv from "dotenv";
 import { sendMail, buildInvitationEmail, isMailConfigured } from "../services/mailer.js";
+import { getFrontendUrl } from "../utils/frontendUrl.js";
 dotenv.config();
 
 const to = process.argv[2];
@@ -30,7 +31,7 @@ console.log(`Sending to: ${to}\n`);
 
 const { subject, html, text } = buildInvitationEmail({
   shareholderName: "Test Shareholder",
-  inviteUrl: "https://example.com/accept-invite/this-is-only-a-test",
+  inviteUrl: `${getFrontendUrl()}/accept-invite/this-is-only-a-test`,
   expiryHours: 48,
 });
 
