@@ -3,9 +3,9 @@
 // Configure with a dedicated "bot" mailbox, not a personal account:
 //   SMTP_HOST=smtp.gmail.com
 //   SMTP_PORT=587
-//   SMTP_USER=bot@yourdomain.com
+//   SMTP_USER=bot@sukunbuilders.com
 //   SMTP_PASS=<app password, not the account password>
-//   MAIL_FROM="Sukun Builders <bot@yourdomain.com>"
+//   MAIL_FROM="Sukun Builders <bot@sukunbuilders.com>"
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 dotenv.config();
