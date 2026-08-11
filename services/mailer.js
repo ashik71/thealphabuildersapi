@@ -8,14 +8,7 @@
 //   MAIL_FROM="Sukun Builders <bot@sukunbuilders.com>"
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
-import dns from "dns";
 dotenv.config();
-
-// Render has no outbound IPv6 route; Node's DNS resolver otherwise returns
-// Gmail's IPv6 address first and the SMTP connection fails with ENETUNREACH.
-// This forces dns.lookup() (which nodemailer uses internally) to resolve
-// IPv4 addresses first.
-dns.setDefaultResultOrder("ipv4first");
 
 let transporter;
 
@@ -34,6 +27,11 @@ function getTransporter() {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    // Render has no outbound IPv6 route. This option is forwarded straight
+    // through to Node's net.connect/tls.connect, forcing IPv4 resolution —
+    // dns.setDefaultResultOrder does NOT work here, since nodemailer's
+    // SMTPConnection connects via net.connect directly, bypassing dns.lookup().
+    family: 4,
   });
 
   return transporter;
