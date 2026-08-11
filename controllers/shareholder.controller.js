@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import Shareholder from "../models/shareholder.model.js";
 import ShareholderCommitment from "../models/shareholderCommitment.model.js";
 import Payment from "../models/payment.model.js";
+import User from "../models/user.model.js";
 dotenv.config();
 
 // ✅ Get single Shareholder
@@ -13,6 +14,11 @@ export const getShareholders = async (req, res) => {
     Payment.find().populate("ProjectId", "Name"),
   ]);
   if (!shareholders) return res.status(404).json({ message: "Not found" });
+
+  const accountHolders = await User.find({
+    shareholderId: { $in: shareholders.map((s) => s._id) },
+  }).distinct("shareholderId");
+  const shareholderIdsWithAccount = new Set(accountHolders.map((id) => id.toString()));
 
   const projectsByShareholder = {};
   const addProject = (shareholderId, project) => {
@@ -29,7 +35,8 @@ export const getShareholders = async (req, res) => {
     const Projects = projectMap
       ? Array.from(projectMap, ([ProjectId, ProjectName]) => ({ ProjectId, ProjectName }))
       : [];
-    return { ...s.toObject(), Projects };
+    const HasAccount = shareholderIdsWithAccount.has(s._id.toString());
+    return { ...s.toObject(), Projects, HasAccount };
   });
 
   res.json(result);
