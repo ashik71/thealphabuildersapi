@@ -81,4 +81,11 @@ export const expenseSchema = z.object({
   Date: z.coerce.date().optional(),
   PaidTo: z.string().optional(),
   Notes: z.string().optional(),
+  // When true, the amount is split equally across every shareholder with a
+  // commitment on this project (see createExpense) — 400s server-side if
+  // the project has none.
+  SplitAmongShareholders: z.boolean().optional(),
+  // Only meaningful alongside SplitAmongShareholders: true — whether each
+  // shareholder's share should also be recorded as already paid.
+  MarkSharesPaid: z.boolean().optional(),
 });
