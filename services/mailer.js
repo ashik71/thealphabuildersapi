@@ -1,49 +1,39 @@
-// SMTP sender for transactional mail (currently: shareholder invitations).
+// Transactional mail (currently: shareholder invitations) via Resend's HTTP
+// API — not SMTP. Render's free tier blocks all outbound traffic on SMTP
+// ports 25/465/587 (platform-wide anti-spam policy since Sept 2025), so any
+// SMTP provider — Gmail, Resend's own smtp-relay, anything — fails the same
+// way. Resend's REST API runs over HTTPS/443, which isn't blocked.
 //
-// Configure with a dedicated "bot" mailbox, not a personal account:
-//   SMTP_HOST=smtp.gmail.com
-//   SMTP_PORT=587
-//   SMTP_USER=bot@sukunbuilders.com
-//   SMTP_PASS=<app password, not the account password>
-//   MAIL_FROM="Sukun Builders <bot@sukunbuilders.com>"
-import nodemailer from "nodemailer";
+// Configure:
+//   RESEND_API_KEY=re_...
+//   MAIL_FROM="Sukun Builders <noreply@sukunbuilders.com>"  (domain must be
+//     verified in Resend, or sends are limited to the account's own address)
 import dotenv from "dotenv";
 dotenv.config();
 
-let transporter;
-
-function getTransporter() {
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
-    throw new Error(
-      "SMTP is not configured — set SMTP_HOST, SMTP_PORT, SMTP_USER and SMTP_PASS"
-    );
-  }
-
-  transporter ??= nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: Number(process.env.SMTP_PORT) === 465,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    // Render has no outbound IPv6 route. This option is forwarded straight
-    // through to Node's net.connect/tls.connect, forcing IPv4 resolution —
-    // dns.setDefaultResultOrder does NOT work here, since nodemailer's
-    // SMTPConnection connects via net.connect directly, bypassing dns.lookup().
-    family: 4,
-  });
-
-  return transporter;
-}
+const RESEND_API_URL = "https://api.resend.com/emails";
 
 export async function sendMail({ to, subject, html, text }) {
-  const from = process.env.MAIL_FROM || process.env.SMTP_USER;
-  return getTransporter().sendMail({ from, to, subject, html, text });
+  const from = process.env.MAIL_FROM;
+  const res = await fetch(RESEND_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+    },
+    body: JSON.stringify({ from, to, subject, html, text }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Resend API error (${res.status}): ${body}`);
+  }
+
+  return res.json();
 }
 
 export function isMailConfigured() {
-  return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER);
+  return Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM);
 }
 
 export function buildInvitationEmail({ shareholderName, inviteUrl, expiryHours }) {
