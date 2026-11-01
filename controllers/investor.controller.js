@@ -4,7 +4,28 @@ import Project from "../models/project.model.js";
 import { investorProjectSchema } from "../validation/schemas.js";
 
 export const getInvestors = async (_req, res) => {
-  res.json(await Investor.find().sort({ createdAt: -1 }));
+  const [investors, assignments] = await Promise.all([
+    Investor.find().sort({ createdAt: -1 }),
+    InvestorProject.find().populate("ProjectId", "Name"),
+  ]);
+  const projectsByInvestor = new Map();
+  for (const assignment of assignments) {
+    const key = assignment.InvestorId.toString();
+    const projects = projectsByInvestor.get(key) ?? [];
+    if (assignment.ProjectId) {
+      projects.push({
+        ProjectId: assignment.ProjectId._id,
+        ProjectName: assignment.ProjectId.Name,
+      });
+    }
+    projectsByInvestor.set(key, projects);
+  }
+  res.json(
+    investors.map((investor) => ({
+      ...investor.toObject(),
+      Projects: projectsByInvestor.get(investor._id.toString()) ?? [],
+    }))
+  );
 };
 
 export const createInvestor = async (req, res) => {
