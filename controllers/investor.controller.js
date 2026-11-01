@@ -145,3 +145,13 @@ export const createInvestorPayment = async (req, res) => {
   await assignment.save();
   res.status(201).json(payment);
 };
+
+export const getInvestorPayments = async (req, res) => {
+  const assignment = await InvestorProject.findOne({
+    _id: req.params.assignmentId,
+    InvestorId: req.params.investorId,
+  });
+  if (!assignment) return res.status(404).json({ message: "Investor project assignment not found" });
+  const payments = await InvestorPayment.find({ InvestorProjectId: assignment._id }).sort({ Date: -1, createdAt: -1 });
+  res.json(payments);
+};

@@ -9,6 +9,7 @@ import {
   updateInvestorProject,
   deleteInvestorProject,
   createInvestorPayment,
+  getInvestorPayments,
 } from "../controllers/investor.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 import { adminOnly } from "../middleware/role.middleware.js";
@@ -26,5 +27,6 @@ router.post("/:investorId/projects", createInvestorProject);
 router.put("/:investorId/projects/:assignmentId", updateInvestorProject);
 router.delete("/:investorId/projects/:assignmentId", deleteInvestorProject);
 router.post("/:investorId/projects/:assignmentId/payments", createInvestorPayment);
+router.get("/:investorId/projects/:assignmentId/payments", getInvestorPayments);
 
 export default router;
