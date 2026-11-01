@@ -48,6 +48,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/commitments", shareholderCommitmentRoutes);
 app.use("/api/invitations", invitationRoutes);
 app.use("/api/me", meRoutes);
+// Investor identity and project-assignment API.
 app.use("/api/investors", investorRoutes);
 
 // Last-resort handler: log the detail, return a generic message. Stack traces
