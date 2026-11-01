@@ -55,17 +55,22 @@ export const shareholderSchema = z.object({
   Email: z.string().email().optional(),
 });
 
-export const investorSchema = z.object({
+const investorFields = {
   Name: z.string().trim().min(1, "Name is required"),
   Email: z.string().trim().email("Invalid email address").optional(),
   Phone: z.string().trim().min(7, "Phone number is required"),
   Notes: z.string().trim().optional(),
   Status: z.enum(["active", "inactive"]),
-}).superRefine((value, context) => {
+};
+
+const validateNotesLength = (value, context) => {
   if (value.Notes && value.Notes.trim().split(/\s+/).length > 1000) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["Notes"], message: "Notes must be 1000 words or fewer" });
   }
-});
+};
+
+export const investorSchema = z.object(investorFields).superRefine(validateNotesLength);
+export const investorUpdateSchema = z.object(investorFields).partial().superRefine(validateNotesLength);
 
 const notesSchema = z.string().trim().optional().superRefine((value, context) => {
   if (value && value.split(/\s+/).length > 1000) {
