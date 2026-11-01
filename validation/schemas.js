@@ -85,16 +85,17 @@ export const investorProjectSchema = z.object({
   InvestorId: objectId,
   ProjectId: objectId,
   Amount: z.number().finite().min(0),
-  Paid: z.number().finite().min(0),
+  DurationMonths: z.number().int().positive("Duration must be at least one month"),
   ProfitMargin: z.number().finite().min(0),
   Deadline: z.coerce.date(),
-  PaymentMethod: z.enum(["Bank", "Mobile Banking", "Cash"]),
   Notes: notesSchema,
   Status: z.enum(["pending", "paid", "overdue"]),
-}).superRefine((value, context) => {
-  if (value.Paid > value.Amount) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ["Paid"], message: "Paid cannot exceed Amount" });
-  }
+});
+
+export const investorPaymentSchema = z.object({
+  Amount: z.number().finite().positive("Payment amount must be greater than zero"),
+  PaymentMethod: z.enum(["Bank", "Mobile Banking", "Cash"]),
+  Notes: notesSchema,
 });
 
 export const paymentSchema = z.object({
