@@ -11,6 +11,7 @@ import paymentRoutes from "./routes/payment.routes.js";
 import shareholderCommitmentRoutes from "./routes/shareholderCommitment.routes.js";
 import invitationRoutes from "./routes/invitation.routes.js";
 import meRoutes from "./routes/me.routes.js";
+import investorRoutes from "./routes/investor.routes.js";
 import { getFrontendUrl } from "./utils/frontendUrl.js";
 
 dotenv.config();
@@ -47,6 +48,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/commitments", shareholderCommitmentRoutes);
 app.use("/api/invitations", invitationRoutes);
 app.use("/api/me", meRoutes);
+app.use("/api/investors", investorRoutes);
 
 // Last-resort handler: log the detail, return a generic message. Stack traces
 // and driver errors must never reach a client.

@@ -1,0 +1,95 @@
+import Investor from "../models/investor.model.js";
+import InvestorProject from "../models/investorProject.model.js";
+import Project from "../models/project.model.js";
+import { investorProjectSchema } from "../validation/schemas.js";
+
+export const getInvestors = async (_req, res) => {
+  res.json(await Investor.find().sort({ createdAt: -1 }));
+};
+
+export const createInvestor = async (req, res) => {
+  const investor = await Investor.create(req.body);
+  res.status(201).json(investor);
+};
+
+export const updateInvestor = async (req, res) => {
+  const investor = await Investor.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true,
+  });
+  if (!investor) return res.status(404).json({ message: "Investor not found" });
+  res.json(investor);
+};
+
+export const deleteInvestor = async (req, res) => {
+  const investor = await Investor.findByIdAndDelete(req.params.id);
+  if (!investor) return res.status(404).json({ message: "Investor not found" });
+  await InvestorProject.deleteMany({ InvestorId: investor._id });
+  res.json({ message: "Investor deleted" });
+};
+
+export const getInvestorProjects = async (req, res) => {
+  const investor = await Investor.findById(req.params.investorId);
+  if (!investor) return res.status(404).json({ message: "Investor not found" });
+  const assignments = await InvestorProject.find({ InvestorId: investor._id }).populate("ProjectId", "Name");
+  res.json(assignments);
+};
+
+export const createInvestorProject = async (req, res) => {
+  const investor = await Investor.findById(req.params.investorId);
+  if (!investor) return res.status(404).json({ message: "Investor not found" });
+  const parsed = investorProjectSchema.safeParse({ ...req.body, InvestorId: req.params.investorId });
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      message: "Validation failed",
+      errors: parsed.error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })),
+    });
+  }
+  const project = await Project.findById(parsed.data.ProjectId);
+  if (!project) return res.status(404).json({ message: "Project not found" });
+  try {
+    const assignment = await InvestorProject.create(parsed.data);
+    res.status(201).json(await assignment.populate("ProjectId", "Name"));
+  } catch (error) {
+    if (error?.code === 11000) return res.status(409).json({ message: "Investor is already assigned to this project" });
+    throw error;
+  }
+};
+
+export const updateInvestorProject = async (req, res) => {
+  const existing = await InvestorProject.findOne({
+    _id: req.params.assignmentId,
+    InvestorId: req.params.investorId,
+  });
+  if (!existing) return res.status(404).json({ message: "Investor project assignment not found" });
+  const parsed = investorProjectSchema.safeParse({
+    ...existing.toObject(),
+    ...req.body,
+    InvestorId: req.params.investorId,
+    ProjectId: req.body.ProjectId ?? existing.ProjectId.toString(),
+  });
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      message: "Validation failed",
+      errors: parsed.error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })),
+    });
+  }
+  const project = await Project.findById(parsed.data.ProjectId);
+  if (!project) return res.status(404).json({ message: "Project not found" });
+  const assignment = await InvestorProject.findByIdAndUpdate(existing._id, parsed.data, {
+    new: true,
+    runValidators: true,
+  }).populate("ProjectId", "Name");
+  res.json(assignment);
+};
+
+export const deleteInvestorProject = async (req, res) => {
+  const deleted = await InvestorProject.findOneAndDelete({
+    _id: req.params.assignmentId,
+    InvestorId: req.params.investorId,
+  });
+  if (!deleted) return res.status(404).json({ message: "Investor project assignment not found" });
+  res.json({ message: "Investor project assignment deleted" });
+};

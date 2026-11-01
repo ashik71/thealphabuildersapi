@@ -55,6 +55,40 @@ export const shareholderSchema = z.object({
   Email: z.string().email().optional(),
 });
 
+export const investorSchema = z.object({
+  Name: z.string().trim().min(1, "Name is required"),
+  Email: z.string().trim().email("Invalid email address").optional(),
+  Phone: z.string().trim().min(7, "Phone number is required"),
+  Notes: z.string().trim().optional(),
+  Status: z.enum(["active", "inactive"]),
+}).superRefine((value, context) => {
+  if (value.Notes && value.Notes.trim().split(/\s+/).length > 1000) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["Notes"], message: "Notes must be 1000 words or fewer" });
+  }
+});
+
+const notesSchema = z.string().trim().optional().superRefine((value, context) => {
+  if (value && value.split(/\s+/).length > 1000) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Notes must be 1000 words or fewer" });
+  }
+});
+
+export const investorProjectSchema = z.object({
+  InvestorId: objectId,
+  ProjectId: objectId,
+  Amount: z.number().finite().min(0),
+  Paid: z.number().finite().min(0),
+  ProfitMargin: z.number().finite().min(0),
+  Deadline: z.coerce.date(),
+  PaymentMethod: z.enum(["Bank", "Mobile Banking", "Cash"]),
+  Notes: notesSchema,
+  Status: z.enum(["pending", "paid", "overdue"]),
+}).superRefine((value, context) => {
+  if (value.Paid > value.Amount) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["Paid"], message: "Paid cannot exceed Amount" });
+  }
+});
+
 export const paymentSchema = z.object({
   ProjectId: objectId,
   ShareholderId: objectId,
