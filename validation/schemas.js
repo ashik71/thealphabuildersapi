@@ -57,7 +57,10 @@ export const shareholderSchema = z.object({
 
 const investorFields = {
   Name: z.string().trim().min(1, "Name is required"),
-  Email: z.string().trim().email("Invalid email address").optional(),
+  Email: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().trim().email("Invalid email address").optional()
+  ),
   Phone: z.string().trim().min(7, "Phone number is required"),
   Notes: z.string().trim().optional(),
   Status: z.enum(["active", "inactive"]),
