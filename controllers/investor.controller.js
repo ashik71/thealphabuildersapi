@@ -1,7 +1,8 @@
 import Investor from "../models/investor.model.js";
 import InvestorProject from "../models/investorProject.model.js";
+import InvestorPayment from "../models/investorPayment.model.js";
 import Project from "../models/project.model.js";
-import { investorProjectSchema } from "../validation/schemas.js";
+import { investorPaymentSchema, investorProjectSchema } from "../validation/schemas.js";
 
 export const getInvestors = async (_req, res) => {
   const [investors, assignments] = await Promise.all([
@@ -45,7 +46,9 @@ export const updateInvestor = async (req, res) => {
 export const deleteInvestor = async (req, res) => {
   const investor = await Investor.findByIdAndDelete(req.params.id);
   if (!investor) return res.status(404).json({ message: "Investor not found" });
+  const assignments = await InvestorProject.find({ InvestorId: investor._id }).select("_id");
   await InvestorProject.deleteMany({ InvestorId: investor._id });
+  await InvestorPayment.deleteMany({ InvestorProjectId: { $in: assignments.map(({ _id }) => _id) } });
   res.json({ message: "Investor deleted" });
 };
 
@@ -112,5 +115,33 @@ export const deleteInvestorProject = async (req, res) => {
     InvestorId: req.params.investorId,
   });
   if (!deleted) return res.status(404).json({ message: "Investor project assignment not found" });
+  await InvestorPayment.deleteMany({ InvestorProjectId: deleted._id });
   res.json({ message: "Investor project assignment deleted" });
+};
+
+export const createInvestorPayment = async (req, res) => {
+  const assignment = await InvestorProject.findOne({
+    _id: req.params.assignmentId,
+    InvestorId: req.params.investorId,
+  });
+  if (!assignment) return res.status(404).json({ message: "Investor project assignment not found" });
+  const parsed = investorPaymentSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      message: "Validation failed",
+      errors: parsed.error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })),
+    });
+  }
+  if (assignment.Paid + parsed.data.Amount > assignment.Amount) {
+    return res.status(400).json({ message: "Payment cannot exceed the remaining due amount" });
+  }
+  const payment = await InvestorPayment.create({
+    InvestorProjectId: assignment._id,
+    ...parsed.data,
+  });
+  assignment.Paid += parsed.data.Amount;
+  assignment.PaymentMethod = parsed.data.PaymentMethod;
+  await assignment.save();
+  res.status(201).json(payment);
 };
